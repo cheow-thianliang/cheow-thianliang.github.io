@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+body {
+    font-family: "Helvetica Neue", Helvetica, sans-serif;    
+    text-align: center;
+}
+
+/* map style */
+.svg-map { background: lightBlue; border: 1px #dedede;  }
+.subunit { fill: #f7f7f7; }
+.la { fill: red; }
+.ma { fill: green; opacity: 0.5}
+.sa { fill: blue; opacity: 0.25}
+
+/* tooltip style */
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+/* legend style */
+.legend {
+    border: 1px solid;
+    width: 200px;    
+    text-align: left;
+    margin: auto;   
+}
+
+.legend header {
+    font-weight: bold;
+    text-align: center;
+    text-decoration: underline;
+}
+
+.legend svg {
+    width: 20px;
+    height: 20px;
+    padding: 1px;
+}
+</style>
+<body>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+<script>
+
+d3.select("body").append("h1")
+    .text("Airport Distribution Over the World");
+    
+var width = 960,
+    height = 960;
+    
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("class", "svg-map");
+    
+var projection = d3.geo.mercator()
+    .scale((width + 1) / 2 / Math.PI)
+    .translate([width / 2, height / 2])
+    .precision(.1);
+    
+var path = d3.geo.path()
+    .projection(projection);
+
+var url = 'data/world/world_airports.json';
+
+var categories = [
+    { 'id': 'la', 'key': 'large_airport', 'name': 'Large Airport', 'pointRadius': 2, 'style': 'la' },
+    { 'id': 'ma', 'key': 'medium_airport', 'name': 'Medium Airport', 'pointRadius': 1, 'style': 'ma' },
+    { 'id': 'sa', 'key': 'small_airport', 'name': 'Small Airport', 'pointRadius': 0.5, 'style': 'sa' }
+];
+
+function toggleDisplay(e) {    
+    var airports = svg.selectAll("." + e.id);
+    display = e.checked ? "inline": "none";    
+    airports.attr("display", display);    
+}
+
+var legend = d3.select("body")
+    .append("div")
+    .attr("class", "legend");
+    
+legend.append("header")
+    .text("Legend");
+
+for (i = 0; i < categories.length; i++) {
+    var c = categories[i];
+    var item = legend.append("div")
+        .attr("class", "item");
+    item.append("input")
+        .attr("type", "checkbox")
+        .attr("id", c.id)               
+        .attr("onchange", "toggleDisplay(this)")
+        .property("checked", true);
+    item.append("svg")
+        .append("circle")
+            .attr("cx", 10)
+            .attr("cy", 10)
+            .attr("r", 5)
+            .attr("class", c.style);
+    item.append("label")
+        .text(c.name);    
+}
+
+var tip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(d) {
+        return "<strong>Name:</strong> <span style='color:red'>" + d.properties.name + "</span>";
+    });
+
+svg.call(tip);
+
+d3.json(url, function(error, data) {
+    if (error) return console.error(error);   
+  
+    var subunits = topojson.feature(data, data.objects.subunits);
+    svg.append("path")
+      .datum(subunits)
+      .attr("d", path)
+      .attr("class", "subunit");
+      
+      
+    for (i = 0; i < categories.length; i++) {
+        var c = categories[i];
+        var airports = topojson.feature(data, data.objects[c.key]);
+       
+        svg.selectAll(".subunit").data(airports.features)
+            .enter()
+            .append("path")        
+                .attr("id", c.id)
+                .attr("d", path.pointRadius(c.pointRadius))
+                .attr("class", c.style)        
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide);
+    }   
+    
+});
+
+</script>
+</body>
+</html>

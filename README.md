@@ -1,6 +1,6 @@
 This project contains sample of data visualization that the author created over the year.
 
-1. Airport distribution over the world (airports.html).
+1. Worldwide airport distribution (airports.html).
 
 **References:**
   * http://bost.ocks.org/mike/map/
